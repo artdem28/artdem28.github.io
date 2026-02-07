@@ -297,9 +297,14 @@
 
     <button id="addMacroBtn" class="add-macro-btn" style="display:none;">+ Add Macro</button>
 
+    <div class="additional" id="extraContextSection" style="display:none;">
+      <label for="extraContext">Extra Context (optional)</label>
+      <textarea id="extraContext" placeholder="Paste or describe relevant context here -- e.g. column names, data samples, entity structures, file layouts..."></textarea>
+    </div>
+
     <div class="additional" id="additionalSection" style="display:none;">
       <label for="additionalInstructions">Additional Instructions (optional)</label>
-      <textarea id="additionalInstructions" placeholder="Add any extra context, special requirements, or instructions here..."></textarea>
+      <textarea id="additionalInstructions" placeholder="Any special requirements, constraints, or output formatting preferences..."></textarea>
     </div>
   </div>
 
@@ -325,11 +330,12 @@
         document.getElementById('loading').style.display = 'none';
         document.getElementById('macros-container').style.display = 'block';
         document.getElementById('addMacroBtn').style.display = 'block';
+        document.getElementById('extraContextSection').style.display = 'block';
         document.getElementById('additionalSection').style.display = 'block';
 
-        // Create initial 5 macro cards
+        // Create initial 5 macro cards (only first one open)
         for (var i = 0; i < 5; i++) {
-          addMacroCard();
+          addMacroCard(i === 0);
         }
         updateFilledButton();
       })
@@ -337,15 +343,17 @@
         document.getElementById('loading').textContent = 'Failed to load prompt. Make sure you are serving this via a web server (see Makefile).';
       });
 
-    function addMacroCard() {
+    function addMacroCard(startOpen) {
+      if (startOpen === undefined) startOpen = true;
       macroCounter++;
       var n = macroCounter;
       var container = document.getElementById('macros-container');
 
       var details = document.createElement('details');
       details.className = 'macro-card';
-      details.open = true;
+      details.open = startOpen;
       details.setAttribute('data-macro-id', n);
+      if (!startOpen) details.setAttribute('data-collapsed', 'true');
 
       details.innerHTML =
         '<summary>' +
@@ -354,7 +362,7 @@
             '<span class="label">Macro ' + n + '</span>' +
             '<span class="preview"></span>' +
           '</span>' +
-          '<span class="status">included</span>' +
+          '<span class="status">' + (startOpen ? 'included' : 'excluded') + '</span>' +
         '</summary>' +
         '<div class="macro-fields">' +
           '<div class="field-row">' +
@@ -413,8 +421,8 @@
         });
       }
 
-      // Auto-focus the name field
-      nameInput.focus();
+      // Auto-focus the name field only if card is open
+      if (startOpen) nameInput.focus();
 
       updateFilledButton();
       return details;
@@ -496,6 +504,12 @@
 
       // Add macros section if any macros have content
       result += buildMacrosSection(macros);
+
+      // Add extra context if provided
+      var extraCtx = document.getElementById('extraContext').value.trim();
+      if (extraCtx) {
+        result += '\n\n<extra_context>\n' + extraCtx + '\n</extra_context>';
+      }
 
       // Add additional instructions if provided
       var additional = document.getElementById('additionalInstructions').value.trim();
